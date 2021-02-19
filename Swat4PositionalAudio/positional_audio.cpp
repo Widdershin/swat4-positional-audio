@@ -9,25 +9,20 @@
 #include "pch.h"
 #include "Mumble/mumble_plugin_main.h" // Include standard plugin header.
 
-
 static int fetch(float* avatar_pos, float* avatar_front, float* avatar_top, float* camera_pos, float* camera_front, float* camera_top, std::string& context, std::wstring& identity) {
 
 	for (int i = 0; i < 3; i++) {
-
 		avatar_pos[i] = avatar_front[i] = avatar_top[i] = camera_pos[i] = camera_front[i] = camera_top[i] = 0.0f;
-
 	}
-
-
 
 	// Boolean values to check if game addresses retrieval is successful and if the player is in-game
 
 	bool ok, state;
+	char livingState = 8;
 
 	// Create containers to stuff our raw data into, so we can convert it to Mumble's coordinate system
 
 	float avatar_pos_corrector[3], avatar_front_corrector[3], avatar_top_corrector[3];
-
 
 	// Peekproc and assign game addresses to our containers, so we can retrieve positional data
 
@@ -69,35 +64,57 @@ static int fetch(float* avatar_pos, float* avatar_front, float* avatar_top, floa
 
 	procptr_t swat_game_state_6 = peekProcPtr(swat_game_state_5 + 0x84);
 	if (!swat_game_state_6) return false;
+	
+	procptr_t swat_game_alive_0 = peekProcPtr(swat_game_base + 0x000999A4);
+	if (!swat_game_alive_0) return false;
+	
+	procptr_t swat_game_alive_1 = peekProcPtr(swat_game_alive_0 + 0x1AC);
+	if (!swat_game_alive_1) return false;
+	
+	procptr_t swat_game_alive_2 = peekProcPtr(swat_game_alive_1 + 0xD0);
+	if (!swat_game_alive_2) return false;
+	
+	procptr_t swat_game_alive_3 = peekProcPtr(swat_game_alive_2 + 0x78);
+	if (!swat_game_alive_3) return false;
+	
+	procptr_t swat_game_alive_4 = peekProcPtr(swat_game_alive_3 + 0x714);
+	if (!swat_game_alive_4) return false;
+	
+	procptr_t swat_game_alive_5 = peekProcPtr(swat_game_alive_4 + 0x4FC);
+	if (!swat_game_alive_5) return false;
+	
+	procptr_t swat_game_alive_6 = peekProcPtr(swat_game_alive_5 + 0x7C);
+	if (!swat_game_alive_6) return false;
+
 
 	ok = peekProc(swat_game_state_6 + 0xC38, &state, 1) && // Magical state value: 1 when in-game and 0 when in main menu.
 		peekProc(swat_game_base_3, avatar_pos_corrector, 12) && // Avatar Position values (X, Z and Y, respectively).
 		peekProc(swat_game_base_3 + 0x18, avatar_front_corrector, 12) && // Avatar Front Vector values (X, Z and Y, respectively).
-		peekProc(swat_game_base_3 + 0x24, avatar_top_corrector, 12); // Avatar Top Vector values (X, Z and Y, respectively).
+		peekProc(swat_game_base_3 + 0x24, avatar_top_corrector, 12) &&// Avatar Top Vector values (X, Z and Y, respectively).
+		peekProc(swat_game_alive_6 + 0xB9C, &livingState, 1);
 
+	if (livingState == 8) {
+		context = "alive";
+	}
+	else {
+		context = "dead";
+	}
 
 	// This prevents the plugin from linking to the game in case something goes wrong during values retrieval from memory addresses.
 
 	if (!ok) {
-
 		return false;
-
 	}
 
 
 	if (!state) { // If not in-game
-
 		context.clear(); // Clear context
 
 		identity.clear(); // Clear identity
 
 		// Set vectors values to 0.
-
 		for (int i = 0; i < 3; i++)
-
 			avatar_pos[i] = avatar_front[i] = avatar_top[i] = camera_pos[i] = camera_front[i] = camera_top[i] = 0.0f;
-
-
 
 		return true; // This tells Mumble to ignore all vectors.
 
@@ -119,7 +136,7 @@ Z      | Y
 
 	avatar_pos[0] = -avatar_pos_corrector[0] * 2.0f;
 
-	avatar_pos[1] = -avatar_pos_corrector[2] * 2.0f;
+	avatar_pos[1] = -avatar_pos_corrector[2] * 3.0f;
 
 	avatar_pos[2] = -avatar_pos_corrector[1] * 2.0f;
 
@@ -175,9 +192,7 @@ static int trylock(const std::multimap<std::wstring, unsigned long long int>& pi
 
 
 	if (fetch(apos, afront, atop, cpos, cfront, ctop, scontext, sidentity)) {
-
 		return true;
-
 	}
 	else {
 
@@ -192,14 +207,14 @@ static int trylock(const std::multimap<std::wstring, unsigned long long int>& pi
 
 static const std::wstring longdesc() {
 
-	return std::wstring(L"Supports <game name> version <game version> without context or identity support."); // Plugin long description
+	return std::wstring(L"Supports Swat 4 Gold Edition, tested with SWEF."); // Plugin long description
 
 }
 
 
 static std::wstring description(L"Swat 4 (v1.0.0)"); // Plugin short description
 
-static std::wstring shortname(L"Swat 4"); // Plugin short name
+static std::wstring shortname(L"swat4"); // Plugin short name
 
 
 static int trylock1() {
@@ -228,30 +243,23 @@ static MumblePlugin swat4plug = {
 	longdesc,
 
 	fetch
-
 };
 
 
 static MumblePlugin2 swat4plug2 = {
-
 	MUMBLE_PLUGIN_MAGIC_2,
 
 	MUMBLE_PLUGIN_VERSION,
 
 	trylock
-
 };
 
 
 extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin * getMumblePlugin() {
-
 	return &swat4plug;
-
 }
 
 
 extern "C" MUMBLE_PLUGIN_EXPORT MumblePlugin2 * getMumblePlugin2() {
-
 	return &swat4plug2;
-
 }
