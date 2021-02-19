@@ -117,11 +117,11 @@ Z      | Y
 
 */
 
-	avatar_pos[0] = avatar_pos_corrector[0];
+	avatar_pos[0] = -avatar_pos_corrector[0] * 2.0f;
 
-	avatar_pos[1] = -avatar_pos_corrector[2];
+	avatar_pos[1] = -avatar_pos_corrector[2] * 2.0f;
 
-	avatar_pos[2] = avatar_pos_corrector[1];
+	avatar_pos[2] = -avatar_pos_corrector[1] * 2.0f;
 
 
 	avatar_front[0] = avatar_front_corrector[0];
